@@ -41,7 +41,7 @@ aba_cadastro, aba_busca = st.tabs(["📝 Novo Agendamento", "🔍 Consultar Agen
 
 # --- ABA DE CADASTRO ---
 with aba_cadastro:
-    with st.form(key='form_agendamento'):
+    with st.form(key='form_agendamento', clear_on_submit=True):
         nome = st.text_input("Nome do Paciente")
         
         col1, col2 = st.columns(2)
@@ -80,3 +80,4 @@ with aba_busca:
         else:
 
             st.info("A planilha está vazia.")
+

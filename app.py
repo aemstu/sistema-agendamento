@@ -34,7 +34,7 @@ except Exception as e:
     st.error(f"Erro de conexão: {e}")
     st.stop()
 
-st.title("🏥 Sistema de Agendamento & Triagem")
+st.title("🏥 Sistema de Agendamento e Triagem")
 
 aba_cadastro, aba_agenda = st.tabs(["📝 Novo Agendamento", "📅 Consultar e Atualizar Status"])
 
@@ -149,5 +149,6 @@ with aba_agenda:
             
     else:
         st.info("Ainda não há agendamentos cadastrados.")
+
 
 

@@ -47,11 +47,9 @@ with aba_cadastro:
     # LISTA DA EQUIPE (Edite os nomes aqui se quiser)
     lista_equipe = ["Maria", "Enfermeira Plantão", "Secretária", "Outro"]
     
-    with st.form(key='form_agendamento'):
-        # --- AQUI ESTÁ O CAMPO DA MARIA ---
-        # Ele cria um menu para ela selecionar quem é.
-        # Se quiser que ela DIGITE, troque 'st.selectbox' por 'st.text_input'
-        responsavel = st.selectbox("Quem está agendando?", lista_equipe, key="input_responsavel")
+with st.form(key='form_agendamento'):
+        # Campo de texto livre (Digita uma vez e fica fixo)
+        responsavel = st.text_input("Quem está agendando?", key="input_responsavel")
         
         st.divider() 
         
@@ -140,3 +138,4 @@ with aba_agenda:
             
     else:
         st.info("Ainda não há agendamentos cadastrados.")
+

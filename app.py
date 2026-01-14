@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
-from datetime import date
+from datetime import date, time
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Sistema de Agendamento", layout="wide")
@@ -22,8 +22,7 @@ def conectar_google_sheets():
     
     gc = gspread.authorize(credentials)
     
-    # --- MUDANÇA AQUI: USANDO O ID DA PLANILHA ---
-    # Isso blinda o sistema. Ela pode mudar o nome do arquivo que não quebra.
+    # ID DA PLANILHA (Blindado)
     sheet_id = "1gF6fMQBK9NI8waQbvdMTnZZFrR__4tME6LBt7hTu0gw"
     sheet = gc.open_by_key(sheet_id).sheet1
     return sheet
@@ -34,49 +33,53 @@ except Exception as e:
     st.error(f"Erro de conexão: {e}")
     st.stop()
 
-st.title("🏥 Sistema de Agendamento e Triagem")
+st.title("🏥 Sistema de Agendamento & Triagem")
 
 aba_cadastro, aba_agenda = st.tabs(["📝 Novo Agendamento", "📅 Consultar e Atualizar Status"])
 
 # ---------------------------------------------------------
-# ABA 1: CADASTRO (CORRIGIDO E BLINDADO)
+# ABA 1: CADASTRO
 # ---------------------------------------------------------
 with aba_cadastro:
     st.header("Adicionar Paciente")
     
     with st.form(key='form_agendamento'):
-        # Campo Responsável (Texto livre que não apaga)
+        # Responsável (Fixo)
         responsavel = st.text_input("Quem está agendando?", key="input_responsavel")
         
         st.divider() 
         
-        # Campos do Paciente (Com chaves para controle)
         nome = st.text_input("Nome do Paciente", key="input_nome")
         
-        col1, col2 = st.columns(2)
-        data_atendimento = col1.date_input("Data do Atendimento", value=date.today(), format="DD/MM/YYYY", key="input_data")
-        profissional = col2.selectbox("Profissional", ["Enfermeira", "Médico", "Psicólogo", "Dentista", "Outro"], key="input_profissional")
+        # LINHA DE DATA E HORA
+        col_data, col_hora = st.columns(2)
+        data_atendimento = col_data.date_input("Data", value=date.today(), format="DD/MM/YYYY", key="input_data")
+        hora_atendimento = col_hora.time_input("Horário", value=time(8, 0), key="input_hora") # Começa 08:00 por padrão
         
-        col3, col4 = st.columns(2)
-        telefone = col3.text_input("Telefone", key="input_telefone")
+        # LINHA DE PROFISSIONAL E TELEFONE
+        col_prof, col_tel = st.columns(2)
+        # Lista atualizada
+        lista_profissionais = ["Enfermeira", "Médico", "Fisioterapeuta", "Dentista", "Outro"]
+        profissional = col_prof.selectbox("Profissional", lista_profissionais, key="input_profissional")
+        telefone = col_tel.text_input("Telefone", key="input_telefone")
         
         observacao = st.text_area("Observação / Motivo", key="input_obs")
         
-        # --- A GRANDE MUDANÇA: LÓGICA UNIFICADA ---
-        # --- LÓGICA UNIFICADA (COM AVISO GRANDE) ---
+        # FUNÇÃO DE SALVAR MESTRA
         def salvar_formulario():
-            # 1. Pega os valores
             v_nome = st.session_state.input_nome
             v_resp = st.session_state.input_responsavel
             v_data = st.session_state.input_data
+            v_hora = st.session_state.input_hora
             v_prof = st.session_state.input_profissional
             v_obs = st.session_state.input_obs
             v_tel = st.session_state.input_telefone
             
-            # 2. Verifica se tem nome
             if v_nome:
                 try:
                     status_inicial = "Agendado"
+                    # Ordem das colunas: A, B, C, D, E, F, G, H (Horario)
+                    # Mas no append_row você define a ordem dos dados:
                     dados = [
                         v_nome, 
                         v_data.strftime("%d/%m/%Y"), 
@@ -84,30 +87,29 @@ with aba_cadastro:
                         v_obs, 
                         v_tel, 
                         v_resp,
-                        status_inicial
+                        status_inicial,
+                        str(v_hora) # Salva o horário na Coluna H
                     ]
                     
-                    # Salva no Google Sheets
                     sheet.append_row(dados)
                     
-                    # --- VOLTOU A SER O AVISO GRANDE ---
-                    st.success(f"✅ Agendado com sucesso por {v_resp}!")
+                    st.success(f"✅ Agendado com sucesso para {v_prof}! (Resp: {v_resp})")
                     
-                    # 3. Limpa os campos específicos
+                    # Limpeza
                     st.session_state.input_nome = ""
                     st.session_state.input_telefone = ""
                     st.session_state.input_obs = ""
+                    # Data e Hora não limpam para facilitar agendamentos em sequência no mesmo dia
                     
                 except Exception as e:
                     st.error(f"Erro ao salvar: {e}")
             else:
                 st.warning("⚠️ O nome do paciente é obrigatório.")
 
-        # O botão chama a função Mestra
         st.form_submit_button(label='Salvar Agendamento', on_click=salvar_formulario)
 
 # ---------------------------------------------------------
-# ABA 2: CONSULTA (COM PESQUISA E EDIÇÃO SEGURA)
+# ABA 2: CONSULTA
 # ---------------------------------------------------------
 with aba_agenda:
     st.header("Gerenciamento do Dia")
@@ -115,25 +117,21 @@ with aba_agenda:
     if st.button("🔄 Atualizar Tabela"):
         st.cache_data.clear()
     
-    # 1. Carrega TUDO do banco de dados (DataFrame Principal)
     dados_sheet = sheet.get_all_records()
     
     if dados_sheet:
         df_original = pd.DataFrame(dados_sheet)
         
-        # 2. Campo de Pesquisa
         termo_busca = st.text_input("🔍 Pesquisar Paciente ou Profissional", placeholder="Digite um nome...")
         
-        # 3. Filtro Lógico (Case Insensitive)
         if termo_busca:
-            # Cria um filtro mas MANTÉM os índices originais (isso é o segredo)
             df_visualizacao = df_original[
                 df_original.astype(str).apply(lambda x: x.str.contains(termo_busca, case=False)).any(axis=1)
             ]
         else:
-            df_visualizacao = df_original # Se não tem busca, mostra tudo
+            df_visualizacao = df_original
 
-        # Configuração das colunas (igual antes)
+        # Configuração das colunas para visualização bonita
         config_colunas = {
             "Status": st.column_config.SelectboxColumn(
                 "Status",
@@ -142,12 +140,12 @@ with aba_agenda:
                 width="medium"
             ),
             "Data": st.column_config.TextColumn("Data", width="small"),
+            "Horario": st.column_config.TextColumn("Hora", width="small"), # Nova coluna visual
             "Responsavel": st.column_config.TextColumn("Resp.", width="small")
         }
 
         st.info("💡 Edite o Status na tabela abaixo e clique em Salvar.")
         
-        # 4. Mostra a tabela (Filtrada ou Completa)
         df_editado = st.data_editor(
             df_visualizacao, 
             column_config=config_colunas, 
@@ -156,27 +154,14 @@ with aba_agenda:
             hide_index=True
         )
         
-        # 5. Botão de Salvar Inteligente
         if st.button("💾 Salvar Alterações de Status"):
-            with st.spinner("Mesclando dados e atualizando planilha..."):
-                
-                # A MÁGICA ACONTECE AQUI:
-                # O comando .update pega as alterações do 'df_editado' e aplica no 'df_original'
-                # baseando-se no índice (número da linha). Assim, não perdemos quem está oculto.
+            with st.spinner("Atualizando planilha..."):
                 df_original.update(df_editado)
-                
-                # Prepara para enviar TUDO (Inclusive os ocultos na busca)
                 valores_atualizados = [df_original.columns.values.tolist()] + df_original.values.tolist()
-                
-                # Salva no Google Sheets
                 sheet.update(range_name="A1", values=valores_atualizados)
             
             st.success("Planilha atualizada com sucesso!")
-            st.cache_data.clear() # Limpa cache para ver a mudança
+            st.cache_data.clear()
             
     else:
         st.info("Ainda não há agendamentos cadastrados.")
-
-
-
-

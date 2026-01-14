@@ -25,7 +25,7 @@ def conectar_google_sheets():
         credentials = Credentials.from_service_account_file("credentials.json", scopes=scopes)
     
     gc = gspread.authorize(credentials)
-    sheet = gc.open("sistema_cadastros").sheet1
+    sheet = gc.open_by_key("1gF6fMQBK9NI8waQbvdMTnZZFrR__4tME6LBt7hTu0gw").sheet1
     return sheet
 
 try:
@@ -80,4 +80,5 @@ with aba_busca:
         else:
 
             st.info("A planilha está vazia.")
+
 

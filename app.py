@@ -63,8 +63,9 @@ with aba_cadastro:
         observacao = st.text_area("Observação / Motivo", key="input_obs")
         
         # --- A GRANDE MUDANÇA: LÓGICA UNIFICADA ---
+        # --- LÓGICA UNIFICADA (COM AVISO GRANDE) ---
         def salvar_formulario():
-            # 1. Pega os valores direto da memória ANTES de limpar
+            # 1. Pega os valores
             v_nome = st.session_state.input_nome
             v_resp = st.session_state.input_responsavel
             v_data = st.session_state.input_data
@@ -88,13 +89,14 @@ with aba_cadastro:
                     
                     # Salva no Google Sheets
                     sheet.append_row(dados)
-                    st.toast(f"✅ Agendado com sucesso por {v_resp}!", icon="🎉")
                     
-                    # 3. SÓ AGORA limpamos os campos específicos
+                    # --- VOLTOU A SER O AVISO GRANDE ---
+                    st.success(f"✅ Agendado com sucesso por {v_resp}!")
+                    
+                    # 3. Limpa os campos específicos
                     st.session_state.input_nome = ""
                     st.session_state.input_telefone = ""
                     st.session_state.input_obs = ""
-                    # O Responsável NÃO é limpo, continua lá
                     
                 except Exception as e:
                     st.error(f"Erro ao salvar: {e}")
@@ -174,6 +176,7 @@ with aba_agenda:
             
     else:
         st.info("Ainda não há agendamentos cadastrados.")
+
 
 
 

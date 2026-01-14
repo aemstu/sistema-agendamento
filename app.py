@@ -39,20 +39,18 @@ st.title("🏥 Sistema de Agendamento & Triagem")
 aba_cadastro, aba_agenda = st.tabs(["📝 Novo Agendamento", "📅 Consultar e Atualizar Status"])
 
 # ---------------------------------------------------------
-# ABA 1: CADASTRO
+# ABA 1: CADASTRO (CORRIGIDO E BLINDADO)
 # ---------------------------------------------------------
 with aba_cadastro:
     st.header("Adicionar Paciente")
     
-    # LISTA DA EQUIPE (Edite os nomes aqui se quiser)
-    lista_equipe = ["Maria", "Enfermeira Plantão", "Secretária", "Outro"]
-    
-with st.form(key='form_agendamento'):
-        # Campo de texto livre (Digita uma vez e fica fixo)
+    with st.form(key='form_agendamento'):
+        # Campo Responsável (Texto livre que não apaga)
         responsavel = st.text_input("Quem está agendando?", key="input_responsavel")
         
         st.divider() 
         
+        # Campos do Paciente (Com chaves para controle)
         nome = st.text_input("Nome do Paciente", key="input_nome")
         
         col1, col2 = st.columns(2)
@@ -64,34 +62,47 @@ with st.form(key='form_agendamento'):
         
         observacao = st.text_area("Observação / Motivo", key="input_obs")
         
-        # Função para limpar apenas os campos do paciente, mantendo a Maria selecionada
-        def limpar_campos():
-            st.session_state.input_nome = ""
-            st.session_state.input_telefone = ""
-            st.session_state.input_obs = ""
-
-        submit_button = st.form_submit_button(label='Salvar Agendamento', on_click=limpar_campos)
-        
-        if submit_button:
-            if nome:
-                status_inicial = "Agendado"
-                # Adicionando o responsável e o status na lista
-                dados = [
-                    nome, 
-                    data_atendimento.strftime("%d/%m/%Y"), 
-                    profissional, 
-                    observacao, 
-                    telefone, 
-                    responsavel,
-                    status_inicial
-                ]
-                
-                with st.spinner('Salvando...'):
+        # --- A GRANDE MUDANÇA: LÓGICA UNIFICADA ---
+        def salvar_formulario():
+            # 1. Pega os valores direto da memória ANTES de limpar
+            v_nome = st.session_state.input_nome
+            v_resp = st.session_state.input_responsavel
+            v_data = st.session_state.input_data
+            v_prof = st.session_state.input_profissional
+            v_obs = st.session_state.input_obs
+            v_tel = st.session_state.input_telefone
+            
+            # 2. Verifica se tem nome
+            if v_nome:
+                try:
+                    status_inicial = "Agendado"
+                    dados = [
+                        v_nome, 
+                        v_data.strftime("%d/%m/%Y"), 
+                        v_prof, 
+                        v_obs, 
+                        v_tel, 
+                        v_resp,
+                        status_inicial
+                    ]
+                    
+                    # Salva no Google Sheets
                     sheet.append_row(dados)
-                
-                st.success(f"✅ Agendado com sucesso por {responsavel}!")
+                    st.toast(f"✅ Agendado com sucesso por {v_resp}!", icon="🎉")
+                    
+                    # 3. SÓ AGORA limpamos os campos específicos
+                    st.session_state.input_nome = ""
+                    st.session_state.input_telefone = ""
+                    st.session_state.input_obs = ""
+                    # O Responsável NÃO é limpo, continua lá
+                    
+                except Exception as e:
+                    st.error(f"Erro ao salvar: {e}")
             else:
                 st.warning("⚠️ O nome do paciente é obrigatório.")
+
+        # O botão chama a função Mestra
+        st.form_submit_button(label='Salvar Agendamento', on_click=salvar_formulario)
 
 # ---------------------------------------------------------
 # ABA 2: CONSULTA
@@ -138,4 +149,5 @@ with aba_agenda:
             
     else:
         st.info("Ainda não há agendamentos cadastrados.")
+
 

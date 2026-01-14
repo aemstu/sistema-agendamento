@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import gspread
+from google.oauth2.service_account import Credentials
 from datetime import date
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
@@ -77,4 +78,5 @@ with aba_busca:
                 df = df[df.astype(str).apply(lambda x: x.str.contains(filtro, case=False)).any(axis=1)]
             st.dataframe(df, use_container_width=True)
         else:
+
             st.info("A planilha está vazia.")

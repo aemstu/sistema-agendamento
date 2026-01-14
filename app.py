@@ -105,7 +105,7 @@ with aba_cadastro:
         st.form_submit_button(label='Salvar Agendamento', on_click=salvar_formulario)
 
 # ---------------------------------------------------------
-# ABA 2: CONSULTA
+# ABA 2: CONSULTA (COM PESQUISA E EDIÇÃO SEGURA)
 # ---------------------------------------------------------
 with aba_agenda:
     st.header("Gerenciamento do Dia")
@@ -113,12 +113,25 @@ with aba_agenda:
     if st.button("🔄 Atualizar Tabela"):
         st.cache_data.clear()
     
+    # 1. Carrega TUDO do banco de dados (DataFrame Principal)
     dados_sheet = sheet.get_all_records()
     
     if dados_sheet:
-        df = pd.DataFrame(dados_sheet)
+        df_original = pd.DataFrame(dados_sheet)
         
-        # Configuração das colunas
+        # 2. Campo de Pesquisa
+        termo_busca = st.text_input("🔍 Pesquisar Paciente ou Profissional", placeholder="Digite um nome...")
+        
+        # 3. Filtro Lógico (Case Insensitive)
+        if termo_busca:
+            # Cria um filtro mas MANTÉM os índices originais (isso é o segredo)
+            df_visualizacao = df_original[
+                df_original.astype(str).apply(lambda x: x.str.contains(termo_busca, case=False)).any(axis=1)
+            ]
+        else:
+            df_visualizacao = df_original # Se não tem busca, mostra tudo
+
+        # Configuração das colunas (igual antes)
         config_colunas = {
             "Status": st.column_config.SelectboxColumn(
                 "Status",
@@ -132,20 +145,32 @@ with aba_agenda:
 
         st.info("💡 Edite o Status na tabela abaixo e clique em Salvar.")
         
+        # 4. Mostra a tabela (Filtrada ou Completa)
         df_editado = st.data_editor(
-            df, 
+            df_visualizacao, 
             column_config=config_colunas, 
             use_container_width=True,
             num_rows="fixed",
             hide_index=True
         )
         
+        # 5. Botão de Salvar Inteligente
         if st.button("💾 Salvar Alterações de Status"):
-            with st.spinner("Atualizando planilha..."):
-                valores_atualizados = [df_editado.columns.values.tolist()] + df_editado.values.tolist()
+            with st.spinner("Mesclando dados e atualizando planilha..."):
+                
+                # A MÁGICA ACONTECE AQUI:
+                # O comando .update pega as alterações do 'df_editado' e aplica no 'df_original'
+                # baseando-se no índice (número da linha). Assim, não perdemos quem está oculto.
+                df_original.update(df_editado)
+                
+                # Prepara para enviar TUDO (Inclusive os ocultos na busca)
+                valores_atualizados = [df_original.columns.values.tolist()] + df_original.values.tolist()
+                
+                # Salva no Google Sheets
                 sheet.update(range_name="A1", values=valores_atualizados)
-            st.success("Planilha atualizada!")
-            st.cache_data.clear() # Força recarregar os dados novos
+            
+            st.success("Planilha atualizada com sucesso!")
+            st.cache_data.clear() # Limpa cache para ver a mudança
             
     else:
         st.info("Ainda não há agendamentos cadastrados.")

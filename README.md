@@ -1,8 +1,8 @@
-# 🏥 Sistema de Agendamento e Triagem (Serverless)
+# Sistema de Agendamento e Triagem (Serverless)
 
 Este projeto é uma aplicação web desenvolvida para gerenciar agendamentos e triagem de pacientes de forma remota e colaborativa. O sistema utiliza uma arquitetura **Serverless** (sem servidor de banco de dados tradicional), usando o **Google Sheets** como backend para persistência de dados em tempo real.
 
-## 🚀 Funcionalidades
+## Funcionalidades
 
 * **Cadastro Simplificado:** Formulário para inserção de pacientes, data de atendimento, profissional responsável e observações.
 * **Banco de Dados em Nuvem:** Todos os dados são salvos instantaneamente em uma planilha do Google Sheets, permitindo fácil exportação e manipulação via Excel/Drive.
@@ -10,14 +10,14 @@ Este projeto é uma aplicação web desenvolvida para gerenciar agendamentos e t
 * **Acesso Mobile:** Interface responsiva (Mobile First) via Streamlit.
 * **Reset Automático:** Limpeza automática de campos após submissão para agilidade no atendimento.
 
-## 🛠️ Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 * **Linguagem:** [Python 3.x](https://www.python.org/)
 * **Frontend:** [Streamlit](https://streamlit.io/)
 * **Integração/Backend:** [Google Sheets API](https://developers.google.com/sheets/api) & [Google Drive API](https://developers.google.com/drive)
 * **Bibliotecas Principais:** `gspread`, `pandas`, `google-auth`
 
-## ⚙️ Arquitetura
+## Arquitetura
 
 O sistema opera no modelo de **Front-end as Code**:
 1.  O usuário acessa a aplicação web hospedada no **Streamlit Cloud**.
@@ -25,7 +25,7 @@ O sistema opera no modelo de **Front-end as Code**:
 3.  Os dados são enviados (JSON) para a API do Google Sheets.
 4.  A planilha é atualizada em tempo real, servindo como "Fonte da Verdade".
 
-## 📦 Como rodar localmente
+## Como rodar localmente
 
 Para rodar este projeto na sua máquina, siga os passos:
 
@@ -52,7 +52,7 @@ Para rodar este projeto na sua máquina, siga os passos:
     streamlit run app.py
     ```
 
-## 🔒 Segurança e Deploy
+## Segurança e Deploy
 
 Este projeto está configurado para deploy no **Streamlit Cloud**.
 Por motivos de segurança, o arquivo `credentials.json` **NÃO** está incluído no repositório.
